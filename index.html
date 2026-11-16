@@ -70,6 +70,7 @@ body{background:var(--bg);font-family:Roboto,Arial,sans-serif;color:var(--ink);p
  <button id="resetBg">Reset background</button>
  <button id="curBtn">Custom cursor</button>
  <button id="curReset">Reset cursor</button>
+ <button id="saveBtn">Save page as file</button>
  <input type="file" id="curFile" accept="image/*" hidden>
  <button id="thm">Toggle light/dark page</button>
  <span style="color:#9ab;font-size:13px;align-self:center">Click any photo to upload · click any text to edit</span>
@@ -80,7 +81,7 @@ body{background:var(--bg);font-family:Roboto,Arial,sans-serif;color:var(--ink);p
  <div class="abs tab" data-p="p3" style="left:301px;width:110px" contenteditable="true">diary</div>
  <div class="abs bar">
   <div class="abs dots">•••</div>
-  <div class="abs url"><span contenteditable="true">www.study space, focus.com</span></div>
+  <div class="abs url"><span contenteditable="true">pxttr1fy_study.com</span></div>
   <div class="abs home">HOME</div>
  </div>
  <div class="abs pill" contenteditable="true">my study dumps</div>
@@ -182,6 +183,12 @@ let tt;document.addEventListener('input',e=>{if(eds.indexOf(e.target)<0)return;c
 kv('get','txt').then(a=>{if(Array.isArray(a)&&a.length===eds.length)a.forEach((h,i)=>{eds[i].innerHTML=h})});
 try{const t=localStorage.getItem('studyTheme');if(t)document.documentElement.dataset.theme=t}catch(e){}
 document.getElementById('thm').addEventListener('click',()=>{try{localStorage.setItem('studyTheme',document.documentElement.dataset.theme||'')}catch(e){}});
+document.getElementById('saveBtn').onclick=()=>{
+ document.querySelectorAll('.panel').forEach(p=>p.style.display='none');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+ let h='<!DOCTYPE html>\n'+document.documentElement.cloneNode(true).outerHTML;
+ const inj='<script>try{if(!localStorage.getItem("studyDiary"))localStorage.setItem("studyDiary",'+JSON.stringify(JSON.stringify(pages)).replace(/</g,'\\u003c')+')}catch(e){}<\/script>\n<script>';
+ h=h.replace('<script>',()=>inj);
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([h],{type:'text/html'}));a.download='index.html';document.body.appendChild(a);a.click();a.remove()};
 </script>
 </body>
 </html>
