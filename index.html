@@ -117,7 +117,11 @@ body{background:var(--bg);font-family:Roboto,Arial,sans-serif;color:var(--ink);p
 #wCard{left:14px;top:64px;width:262px}
 #wGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
 #wGrid button{height:34px;padding:0;margin:0;border-radius:4px;background-size:cover;background-position:center;border:1px solid #ddd}
-#washi{left:0;top:0;width:736px;height:1307px;z-index:15;pointer-events:none}
+#washi{left:0;top:0;width:736px;height:1307px;z-index:10;pointer-events:none}
+/* Keep every opened page/card above decorative tape. */
+#canvas>.panel{z-index:30}
+/* The cover-page photo captions can be repositioned by dragging. */
+.title,.sub,.cap{cursor:move;touch-action:none}
 .wt{position:absolute;pointer-events:auto;cursor:grab;touch-action:none;filter:drop-shadow(0 2px 2px #0004)}
 .wt>div{width:100%;height:100%;background-size:cover;background-position:center;opacity:.92;clip-path:polygon(0 0,100% 0,98% 12%,100% 25%,98% 37%,100% 50%,98% 62%,100% 75%,98% 87%,100% 100%,0 100%,2% 87%,0 75%,2% 62%,0 50%,2% 37%,0 25%,2% 12%)}
 .wt.sel{outline:2px dashed #c46a84;outline-offset:3px}
@@ -411,7 +415,7 @@ mark.hl{color:inherit;border-radius:3px;padding:0 1px}
  <button id="hBtn">Highlighter</button>
  <input type="file" id="curFile" accept="image/*" hidden>
  <button id="thm">Toggle light/dark page</button>
- <span style="color:#9ab;font-size:13px;align-self:center">Click any photo to upload · click any text to edit</span>
+ <span style="color:#9ab;font-size:13px;align-self:center">Click photos to upload · click text to edit · drag cover text to move</span>
 </div>
 <div id="wrap"><div id="canvas">
  <div class="abs tab" data-p="p1" style="left:27px;width:94px" contenteditable="true">notes</div>
@@ -790,6 +794,39 @@ $('mAud').addEventListener('ended',()=>{$('mTrackToggle').textContent='▶ Play 
 
 /* ---- toolbar tools: washi tape and highlighter ---- */
 $('wBtn').onclick=()=>$('wCard').classList.toggle('open');
+
+/* ---- move the cover-page text without interfering with click-to-edit ---- */
+const coverText=[...cv.querySelectorAll('.title,.sub,.cap')];
+kv('get','coverTextPositions').then(pos=>{
+ if(!pos||typeof pos!=='object')return;
+ coverText.forEach((el,i)=>{const v=pos[i];if(v&&Number.isFinite(v.x)&&Number.isFinite(v.y)){el.style.left=v.x+'px';el.style.top=v.y+'px'}});
+});
+coverText.forEach(el=>{
+ let start=null,dragging=false;
+ el.addEventListener('pointerdown',e=>{
+  if(e.button!==0)return;
+  const r=cv.getBoundingClientRect(),scale=r.width/736;
+  start={x:e.clientX,y:e.clientY,left:el.offsetLeft,top:el.offsetTop,scale};
+  try{el.setPointerCapture(e.pointerId)}catch(_){}
+  dragging=false;
+  const move=ev=>{
+   if(!start)return;
+   const dx=ev.clientX-start.x,dy=ev.clientY-start.y;
+   if(!dragging&&Math.hypot(dx,dy)<5)return;
+   if(!dragging){dragging=true;ev.preventDefault()}
+   ev.preventDefault();
+   el.style.left=Math.max(0,Math.min(736-el.offsetWidth,start.left+dx/start.scale))+'px';
+   el.style.top=Math.max(94,Math.min(1150-el.offsetHeight,start.top+dy/start.scale))+'px';
+  };
+  const finish=()=>{
+   el.removeEventListener('pointermove',move);el.removeEventListener('pointerup',finish);el.removeEventListener('pointercancel',finish);
+   if(dragging){const positions={};coverText.forEach((node,i)=>positions[i]={x:node.offsetLeft,y:node.offsetTop});kv('set','coverTextPositions',positions)}
+   start=null;
+  };
+  el.addEventListener('pointermove',move);el.addEventListener('pointerup',finish);el.addEventListener('pointercancel',finish);
+ });
+});
+
 let wtray=[],tapes=[],sel=-1;
 const saveW=()=>{kv('set','wtray',wtray);kv('set','tapes',tapes)};
 function drawTray(){const g=$('wGrid');g.innerHTML='';wtray.forEach(src=>{const b=document.createElement('button');b.style.backgroundImage='url('+src+')';b.title='stick on page';b.onclick=()=>{tapes.push({s:src,x:230+(tapes.length%5)*20,y:300+(tapes.length%6)*40,w:190,h:40,r:-4});sel=tapes.length-1;drawTapes();saveW()};g.appendChild(b)})}
